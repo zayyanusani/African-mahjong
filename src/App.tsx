@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Compass, Lightbulb, RotateCcw, Shuffle, Trophy, Volume2, VolumeX, BookOpen, Flame, Star, Leaf } from 'lucide-react';
 
 type Tile = { id: number; icon: string; label: string; removed: boolean };
-type Save = { level: number; bestScore: number; stars: number; completed: number; coins: number };
+type Save = { level: number; bestScore: number; stars: number; completed: number; coins: number; dailyClaimDate?: string };
 type Snapshot = { tiles: Tile[]; selected: number | null; score: number; moves: number; won: boolean; message: string; save: Save };
 
 const discoveries = [
@@ -28,9 +28,9 @@ const makeTiles = (): Tile[] => {
 const readSave = (): Save => {
   try {
     const value=localStorage.getItem('afrimahjong-save') || localStorage.getItem('afr imahjong-save');
-    if(value) return {...{level:1,bestScore:0,stars:0,completed:0,coins:0},...JSON.parse(value)};
+    if(value) return {...{level:1,bestScore:0,stars:0,completed:0,coins:0,dailyClaimDate:''},...JSON.parse(value)};
   } catch {}
-  return {level:1,bestScore:0,stars:0,completed:0,coins:0};
+  return {level:1,bestScore:0,stars:0,completed:0,coins:0,dailyClaimDate:''};
 };
 
 export default function App() {
@@ -102,6 +102,13 @@ export default function App() {
   };
   const startNext = () => { setSave(s=>({...s,level:s.level+1})); restart(true); };
   const openDiscovery = () => { setDiscovery((d)=> (d+1)%discoveries.length); setShowDiscovery(true); };
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const dailyClaimed = save.dailyClaimDate === todayKey;
+  const claimDailyReward = () => {
+    if (dailyClaimed) { setMessage('Your daily reward has already been claimed. Come back tomorrow!'); return; }
+    setSave(s=>({...s,coins:s.coins+10,dailyClaimDate:todayKey}));
+    setMessage('Daily explorer reward claimed: +10 coins! 🪙');
+  };
 
   return <main className="app-shell">
     <header className="topbar">
@@ -141,11 +148,11 @@ export default function App() {
       </div>
       <aside className="side-column">
         <div className="discovery-card"><div className="card-top"><span className="section-kicker">DID YOU KNOW?</span><span className="leaf-icon"><Leaf size={17}/></span></div><div className="discovery-emoji">{discoveries[discovery].icon}</div><h3>{discoveries[discovery].title}</h3><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><button className="discover-link" onClick={openDiscovery}>Explore more <span>↗</span></button></div>
-        <div className="goal-card"><div className="goal-icon"><BookOpen size={19}/></div><div><b>Discover Africa</b><p>Unlock stories as you play.</p></div><div className="goal-count">{save.completed}<small>stories</small></div></div>
+        <div className="daily-card"><div className="daily-copy"><span className="daily-emoji">🎁</span><div><b>Daily Explorer Bonus</b><p>Visit every day to earn 10 coins.</p></div></div><button className="daily-claim" onClick={claimDailyReward} disabled={dailyClaimed}>{dailyClaimed ? "✓ Claimed today" : "Claim +10 coins"}</button></div><div className="goal-card"><div className="goal-icon"><BookOpen size={19}/></div><div><b>Discover Africa</b><p>Unlock stories as you play.</p></div><div className="goal-count">{save.completed}<small>boards</small></div></div><div className="achievement-card"><span className="section-kicker">YOUR ACHIEVEMENTS</span><div className="achievement-row"><span>🌱</span><div><b>First Steps</b><small>{save.completed > 0 ? "Unlocked — first board cleared" : "Clear your first board"}</small></div><strong>{save.completed > 0 ? "✓" : "🔒"}</strong></div><div className="achievement-row"><span>🪙</span><div><b>Coin Collector</b><small>{save.coins >= 50 ? "Unlocked — 50 coins earned" : `${save.coins}/50 coins collected`}</small></div><strong>{save.coins >= 50 ? "✓" : "🔒"}</strong></div><div className="achievement-row"><span>⭐</span><div><b>Star Seeker</b><small>{save.stars >= 10 ? "Unlocked — 10 stars earned" : `${save.stars}/10 stars earned`}</small></div><strong>{save.stars >= 10 ? "✓" : "🔒"}</strong></div></div>
         <div className="quote-card"><span>“</span><p>Wisdom is like a baobab tree; no one individual can embrace it.</p><small>— African proverb</small></div>
       </aside>
     </section>
-    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V1.0 · OFFLINE READY</span></footer>
+    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V3.0 · ADVENTURE UPDATE</span></footer>
     {showDiscovery && <div className="modal-backdrop" onClick={()=>setShowDiscovery(false)}><section className="discovery-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowDiscovery(false)}>×</button><div className="modal-icon">{discoveries[discovery].icon}</div><span className="section-kicker">AFRICA DISCOVERY LIBRARY</span><h2>{discoveries[discovery].title}</h2><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><div className="modal-controls"><button className="secondary-button" onClick={()=>setDiscovery((discovery+discoveries.length-1)%discoveries.length)}>← Previous</button><button className="primary-button" onClick={()=>setDiscovery((discovery+1)%discoveries.length)}>Next story →</button></div></section></div>}
   </main>;
 }
