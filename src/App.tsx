@@ -44,7 +44,9 @@ export default function App() {
   const [sound,setSound] = useState(false);
   const [showDiscovery,setShowDiscovery] = useState(false);
   const [discovery,setDiscovery] = useState(0);
-  const [won,setWon] = useState(false);\n  const [history,setHistory] = useState<Snapshot[]>([]);\n  const remember = () => setHistory(h => [...h, { tiles: tiles.map(t=>({...t})), selected, score, moves, won, message, save: {...save} }].slice(-50));
+  const [won,setWon] = useState(false);
+  const [history,setHistory] = useState<Snapshot[]>([]);
+  const remember = () => setHistory(h => [...h, { tiles: tiles.map(t=>({...t})), selected, score, moves, won, message, save: {...save} }].slice(-50));
   const remaining = tiles.filter(t=>!t.removed);
   const pairs = remaining.length/2;
   const progress = Math.round(((32-remaining.length)/32)*100);
@@ -52,7 +54,7 @@ export default function App() {
 
   useEffect(()=>{ localStorage.setItem('afrimahjong-save',JSON.stringify(save)); },[save]);
   const restart = (newLevel=false) => {
-    setTiles(makeTiles()); setSelected(null); setHints(null); setMoves(0); setWon(false);
+    setTiles(makeTiles()); setSelected(null); setHints(null); setMoves(0); setWon(false); setHistory([]);
     setScore(0); setMessage(newLevel ? 'New journey unlocked. Good luck!' : 'Fresh board! Match the identical symbols.');
   };
   const choose = (tile:Tile) => {
@@ -115,7 +117,8 @@ export default function App() {
     <section className="stats-row">
       <div className="stat-card"><span className="stat-icon green"><Compass size={18}/></span><div><small>JOURNEY LEVEL</small><strong>{save.level}</strong></div></div>
       <div className="stat-card"><span className="stat-icon gold"><Star size={18}/></span><div><small>TOTAL STARS</small><strong>{save.stars}</strong></div></div>
-      <div className="stat-card"><span className="stat-icon orange"><Flame size={18}/></span><div><small>BOARDS CLEARED</small><strong>{save.completed}</strong></div></div>\n      <div className="stat-card"><span className="stat-icon gold">🪙</span><div><small>COINS</small><strong>{save.coins}</strong></div></div>
+      <div className="stat-card"><span className="stat-icon orange"><Flame size={18}/></span><div><small>BOARDS CLEARED</small><strong>{save.completed}</strong></div></div>
+      <div className="stat-card"><span className="stat-icon gold">🪙</span><div><small>COINS</small><strong>{save.coins}</strong></div></div>
     </section>
 
     <section className="game-layout">
