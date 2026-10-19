@@ -108,10 +108,10 @@ export default function App() {
     setMessage('No matching pair found. Try Shuffle.');
   };
   const shuffle = () => {
-    const active=tiles.filter(t=>isFree(t));
+    const active=tiles.filter(t=>!t.removed);
     const icons=active.map(t=>t.icon).sort(()=>Math.random()-.5);
     let index=0;
-    setTiles(tiles.map(t=>isFree(t)?{...t,icon:icons[index],label: symbols.find(pair=>pair[0]===icons[index++])?.[1] || 'Discovery tile'}:t));
+    setTiles(tiles.map(t=>{ if(t.removed) return t; const icon=icons[index++]; return {...t,icon,label:symbols.find(pair=>pair[0]===icon)?.[1] || 'Discovery tile'}; }));
     setSelected(null); setHints(null); setMessage('Tiles shuffled. Find your next pair!');
   };
   const undo = () => {
