@@ -26,8 +26,11 @@ const makeTiles = (): Tile[] => {
   return deck;
 };
 const readSave = (): Save => {
-  try { const value=localStorage.getItem('afr imahjong-save'); if(value) return {...{level:1,bestScore:0,stars:0,completed:0},...JSON.parse(value)}; } catch {}
-  return {level:1,bestScore:0,stars:0,completed:0};
+  try {
+    const value=localStorage.getItem('afrimahjong-save') || localStorage.getItem('afr imahjong-save');
+    if(value) return {...{level:1,bestScore:0,stars:0,completed:0,coins:0},...JSON.parse(value)};
+  } catch {}
+  return {level:1,bestScore:0,stars:0,completed:0,coins:0};
 };
 
 export default function App() {
@@ -90,7 +93,11 @@ export default function App() {
     setTiles(tiles.map(t=>t.removed?t:{...t,icon:icons[index++],label:'Discovery tile'}));
     setSelected(null); setHints(null); setMessage('Tiles shuffled. Find your next pair!');
   };
-  const undo = () => {\n    const previous=history[history.length-1];\n    if(!previous) { setMessage('Nothing to undo yet. Make a move first.'); return; }\n    setTiles(previous.tiles); setSelected(previous.selected); setScore(previous.score); setMoves(previous.moves); setWon(previous.won); setMessage('Last move undone.'); setSave(previous.save); setHints(null); setHistory(h=>h.slice(0,-1));\n  };
+  const undo = () => {
+    const previous=history[history.length-1];
+    if(!previous) { setMessage('Nothing to undo yet. Make a move first.'); return; }
+    setTiles(previous.tiles); setSelected(previous.selected); setScore(previous.score); setMoves(previous.moves); setWon(previous.won); setMessage('Last move undone.'); setSave(previous.save); setHints(null); setHistory(h=>h.slice(0,-1));
+  };
   const startNext = () => { setSave(s=>({...s,level:s.level+1})); restart(true); };
   const openDiscovery = () => { setDiscovery((d)=> (d+1)%discoveries.length); setShowDiscovery(true); };
 
