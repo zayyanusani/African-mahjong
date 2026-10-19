@@ -56,6 +56,26 @@ export default function App() {
   const [won,setWon] = useState(false);
   const [history,setHistory] = useState<Snapshot[]>([]);
   const remember = () => setHistory(h => [...h, { tiles: tiles.map(t=>({...t})), selected, score, moves, won, message, save: {...save} }].slice(-50));
+  const playTone = (frequency: number, duration = 0.12) => {
+    if (!sound || typeof window === 'undefined') return;
+    try {
+      const AudioContextClass = window.AudioContext;
+      if (!AudioContextClass) return;
+      const context = new AudioContextClass();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + duration + 0.02);
+      oscillator.onended = () => { void context.close(); };
+    } catch { /* Audio is optional; gameplay must continue if unavailable. */ }
+  };
   const remaining = tiles.filter(t=>!t.removed);
   const pairs = remaining.length/2;
   const progress = Math.round(((32-remaining.length)/32)*100);
@@ -88,14 +108,16 @@ export default function App() {
       const next=tiles.map(t=>t.id===first.id||t.id===tile.id?{...t,removed:true}:t);
       const nextScore=score+100;
       setTiles(next); setSelected(null); setMoves(m=>m+1); setScore(nextScore);
+      playTone(660);
       setMessage('Great match! +100 points and +5 coins ✨');
       setSave(s=>({...s,coins:s.coins+5,bestScore:Math.max(s.bestScore,nextScore)}));
       if(next.every(t=>t.removed)) {
         const earned=Math.max(1,Math.min(3,3-Math.floor((moves+1)/10)));
-        setWon(true); setMessage('Amazing! Board cleared — +25 bonus coins!');
+        setWon(true); playTone(880, 0.24); setMessage('Amazing! Board cleared — +25 bonus coins!');
         setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,coins:s.coins+25,bestScore:Math.max(s.bestScore,nextScore)}));
       }
     } else {
+      playTone(220, 0.16);
       setSelected(tile.id); setMoves(m=>m+1); setMessage('Not a match yet — try another tile.');
     }
   };
@@ -105,7 +127,8 @@ export default function App() {
       const partner=current.find((t,j)=>j>i&&t.icon===current[i].icon);
       if(partner) { setHints([current[i].id,partner.id]); setSelected(null); setMessage('Hint: these two tiles match.'); return; }
     }
-    setMessage('No matching pair found. Try Shuffle.');
+    setMessage('No free matching pair found — reshuffling the remaining tiles.');
+    shuffle();
   };
   const shuffle = () => {
     // Keep the remaining deck solvable: shuffle complete pairs, never individual faces.
@@ -194,7 +217,7 @@ export default function App() {
         <div className="quote-card"><span>“</span><p>Wisdom is like a baobab tree; no one individual can embrace it.</p><small>— African proverb</small></div>
       </aside>
     </section>
-    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.0 · SMART PAIR SHUFFLE</span></footer>
+    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.1 · SMART PLAY + SOUND</span></footer>
     {showDiscovery && <div className="modal-backdrop" onClick={()=>setShowDiscovery(false)}><section className="discovery-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowDiscovery(false)}>×</button><div className="modal-icon">{discoveries[discovery].icon}</div><span className="section-kicker">AFRICA DISCOVERY LIBRARY</span><h2>{discoveries[discovery].title}</h2><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><div className="modal-controls"><button className="secondary-button" onClick={()=>setDiscovery((discovery+discoveries.length-1)%discoveries.length)}>← Previous</button><button className="primary-button" onClick={()=>setDiscovery((discovery+1)%discoveries.length)}>Next story →</button></div></section></div>}
   </main>;
 }
