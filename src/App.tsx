@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Compass, Lightbulb, RotateCcw, Shuffle, Trophy, Volume2, VolumeX, BookOpen, Flame, Star, Leaf } from 'lucide-react';
 
-type Tile = { id: number; icon: string; label: string; removed: boolean };
+type Tile = { id: number; icon: string; label: string; removed: boolean; row: number; col: number; layer: number };
 type Save = { level: number; bestScore: number; stars: number; completed: number; coins: number; dailyClaimDate?: string };
 type Snapshot = { tiles: Tile[]; selected: number | null; score: number; moves: number; won: boolean; message: string; save: Save };
 
@@ -19,10 +19,19 @@ const symbols = [
   ['🧿','Pattern'],['🌺','Flower'],['🦋','Butterfly'],['⭐','Star']
 ];
 const makeTiles = (): Tile[] => {
-  const deck = symbols.flatMap(([icon,label], i) => [
-    { id: i*2, icon, label, removed:false }, { id: i*2+1, icon, label, removed:false }
-  ]);
-  for (let i=deck.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+  // Three-layer compact layout: 24 base tiles, 4 middle tiles, 4 top tiles.
+  const positions: Array<{row:number;col:number;layer:number}> = [];
+  for (let row=0; row<4; row++) for (let col=0; col<6; col++) positions.push({row,col,layer:0});
+  for (const row of [1,2]) for (const col of [2,3]) positions.push({row,col,layer:1});
+  for (const row of [1,2]) for (const col of [1,2]) positions.push({row,col,layer:2});
+  const deck = positions.map((pos,id) => {
+    const [icon,label] = symbols[Math.floor(id/2) % symbols.length];
+    return {id,icon,label,removed:false,...pos};
+  });
+  // Shuffle complete pairs so every board starts solvable.
+  const faces = deck.map((_,i)=>symbols[Math.floor(i/2)%symbols.length]);
+  for(let i=faces.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[faces[i],faces[j]]=[faces[j],faces[i]];}
+  deck.forEach((tile,i)=>{tile.icon=faces[i][0];tile.label=faces[i][1];});
   return deck;
 };
 const readSave = (): Save => {
@@ -50,7 +59,16 @@ export default function App() {
   const remaining = tiles.filter(t=>!t.removed);
   const pairs = remaining.length/2;
   const progress = Math.round(((32-remaining.length)/32)*100);
-  const freeTiles = useMemo(()=>remaining, [tiles]);
+  const isFree = (tile:Tile) => {
+    if(tile.removed) return false;
+    const covered = tiles.some(other => !other.removed && other.layer > tile.layer &&
+      Math.abs(other.col-tile.col) < 1 && Math.abs(other.row-tile.row) < 1);
+    if(covered) return false;
+    const leftBlocked = tiles.some(other=>!other.removed && other.layer===tile.layer && other.row===tile.row && other.col===tile.col-1);
+    const rightBlocked = tiles.some(other=>!other.removed && other.layer===tile.layer && other.row===tile.row && other.col===tile.col+1);
+    return !leftBlocked || !rightBlocked;
+  };
+  const freeTiles = useMemo(()=>tiles.filter(isFree), [tiles]);
 
   useEffect(()=>{ localStorage.setItem('afrimahjong-save',JSON.stringify(save)); },[save]);
   const restart = (newLevel=false) => {
@@ -59,6 +77,7 @@ export default function App() {
   };
   const choose = (tile:Tile) => {
     if(tile.removed || won) return;
+    if(!isFree(tile)) { setMessage('This tile is blocked. Choose a free tile on the top or edge.'); return; }
     if(selected===tile.id) { remember(); setSelected(null); setHints(null); return; }
     if(selected===null) { remember(); setSelected(tile.id); setHints(null); return; }
     const first=tiles.find(t=>t.id===selected);
@@ -81,7 +100,7 @@ export default function App() {
     }
   };
   const hint = () => {
-    const current=tiles.filter(t=>!t.removed);
+    const current=tiles.filter(t=>isFree(t));
     for(let i=0;i<current.length;i++) {
       const partner=current.find((t,j)=>j>i&&t.icon===current[i].icon);
       if(partner) { setHints([current[i].id,partner.id]); setSelected(null); setMessage('Hint: these two tiles match.'); return; }
@@ -89,10 +108,10 @@ export default function App() {
     setMessage('No matching pair found. Try Shuffle.');
   };
   const shuffle = () => {
-    const active=tiles.filter(t=>!t.removed);
+    const active=tiles.filter(t=>isFree(t));
     const icons=active.map(t=>t.icon).sort(()=>Math.random()-.5);
     let index=0;
-    setTiles(tiles.map(t=>t.removed?t:{...t,icon:icons[index++],label:'Discovery tile'}));
+    setTiles(tiles.map(t=>isFree(t)?{...t,icon:icons[index],label: symbols.find(pair=>pair[0]===icons[index++])?.[1] || 'Discovery tile'}:t));
     setSelected(null); setHints(null); setMessage('Tiles shuffled. Find your next pair!');
   };
   const undo = () => {
@@ -134,7 +153,7 @@ export default function App() {
         <div className="game-meta"><span>Score <b>{score.toLocaleString()}</b></span><span>Moves <b>{moves}</b></span><span>Pairs left <b>{pairs}</b></span></div>
         <div className="progress-track"><span style={{width:progress+'%'}}/></div>
         <div className="tile-board" aria-label="Mahjong tile board">
-          {tiles.map(tile=><button key={tile.id} className={'tile '+(tile.removed?'tile-gone':'')+(selected===tile.id?' selected':'')+(hints?.includes(tile.id)?' hint-tile':'')} onClick={()=>choose(tile)} disabled={tile.removed} aria-label={tile.label}>
+          {tiles.map(tile=><button key={tile.id} style={{gridColumn:tile.col+1,gridRow:tile.row+1,zIndex:tile.layer+1,transform:tile.layer===2?'translate(7px,-7px)':tile.layer===1?'translate(3px,-3px)':undefined}} className={'tile layer-'+tile.layer+' '+(tile.removed?'tile-gone':'')+(!isFree(tile)?' tile-blocked':'')+(selected===tile.id?' selected':'')+(hints?.includes(tile.id)?' hint-tile':'')} onClick={()=>choose(tile)} disabled={tile.removed} aria-label={tile.label}>
             {!tile.removed && <><span className="tile-symbol">{tile.icon}</span><span className="tile-label">{tile.label}</span></>}
           </button>)}
         </div>
@@ -152,7 +171,7 @@ export default function App() {
         <div className="quote-card"><span>“</span><p>Wisdom is like a baobab tree; no one individual can embrace it.</p><small>— African proverb</small></div>
       </aside>
     </section>
-    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V3.0 · ADVENTURE UPDATE</span></footer>
+    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V4.0 · LAYERED MAHJONG</span></footer>
     {showDiscovery && <div className="modal-backdrop" onClick={()=>setShowDiscovery(false)}><section className="discovery-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowDiscovery(false)}>×</button><div className="modal-icon">{discoveries[discovery].icon}</div><span className="section-kicker">AFRICA DISCOVERY LIBRARY</span><h2>{discoveries[discovery].title}</h2><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><div className="modal-controls"><button className="secondary-button" onClick={()=>setDiscovery((discovery+discoveries.length-1)%discoveries.length)}>← Previous</button><button className="primary-button" onClick={()=>setDiscovery((discovery+1)%discoveries.length)}>Next story →</button></div></section></div>}
   </main>;
 }
