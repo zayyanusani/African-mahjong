@@ -108,11 +108,34 @@ export default function App() {
     setMessage('No matching pair found. Try Shuffle.');
   };
   const shuffle = () => {
-    const active=tiles.filter(t=>!t.removed);
-    const icons=active.map(t=>t.icon).sort(()=>Math.random()-.5);
-    let index=0;
-    setTiles(tiles.map(t=>{ if(t.removed) return t; const icon=icons[index++]; return {...t,icon,label:symbols.find(pair=>pair[0]===icon)?.[1] || 'Discovery tile'}; }));
-    setSelected(null); setHints(null); setMessage('Tiles shuffled. Find your next pair!');
+    // Keep the remaining deck solvable: shuffle complete pairs, never individual faces.
+    const active = tiles.filter(t => !t.removed);
+    if (active.length < 2) {
+      setMessage('There are no remaining tiles to shuffle.');
+      return;
+    }
+    const pairFaces: Array<[string, string]> = [];
+    for (let i = 0; i < active.length / 2; i++) {
+      pairFaces.push(symbols[Math.floor(Math.random() * symbols.length)] as [string, string]);
+    }
+    for (let i = pairFaces.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pairFaces[i], pairFaces[j]] = [pairFaces[j], pairFaces[i]];
+    }
+    const faces = pairFaces.flatMap(face => [face, face]);
+    for (let i = faces.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [faces[i], faces[j]] = [faces[j], faces[i]];
+    }
+    let index = 0;
+    setTiles(tiles.map(t => {
+      if (t.removed) return t;
+      const [icon, label] = faces[index++];
+      return { ...t, icon, label };
+    }));
+    setSelected(null);
+    setHints(null);
+    setMessage('Tiles reshuffled into matching pairs. Keep exploring!');
   };
   const undo = () => {
     const previous=history[history.length-1];
@@ -171,7 +194,7 @@ export default function App() {
         <div className="quote-card"><span>“</span><p>Wisdom is like a baobab tree; no one individual can embrace it.</p><small>— African proverb</small></div>
       </aside>
     </section>
-    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V4.0 · LAYERED MAHJONG</span></footer>
+    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.0 · SMART PAIR SHUFFLE</span></footer>
     {showDiscovery && <div className="modal-backdrop" onClick={()=>setShowDiscovery(false)}><section className="discovery-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowDiscovery(false)}>×</button><div className="modal-icon">{discoveries[discovery].icon}</div><span className="section-kicker">AFRICA DISCOVERY LIBRARY</span><h2>{discoveries[discovery].title}</h2><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><div className="modal-controls"><button className="secondary-button" onClick={()=>setDiscovery((discovery+discoveries.length-1)%discoveries.length)}>← Previous</button><button className="primary-button" onClick={()=>setDiscovery((discovery+1)%discoveries.length)}>Next story →</button></div></section></div>}
   </main>;
 }
