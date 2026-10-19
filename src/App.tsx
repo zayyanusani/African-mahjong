@@ -64,7 +64,7 @@ export default function App() {
       if(next.every(t=>t.removed)) {
         const earned= Math.max(1, Math.min(3, 3-Math.floor(moves/10)));
         setWon(true); setMessage('Amazing! You cleared this board.');
-        setSave(s=>({...s,level:Math.max(s.level, s.level+1),completed:s.completed+1,stars:s.stars+earned,bestScore:Math.max(s.bestScore,score+100)}));
+        setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,bestScore:Math.max(s.bestScore,score+100)}));
       }
     } else {
       setSelected(tile.id); setMoves(m=>m+1); setMessage('Not a match yet — try another tile.');
