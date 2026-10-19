@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Compass, Lightbulb, RotateCcw, Shuffle, Trophy, Volume2, VolumeX, BookOpen, Flame, Star, Leaf } from 'lucide-react';
 
 type Tile = { id: number; icon: string; label: string; removed: boolean };
-type Save = { level: number; bestScore: number; stars: number; completed: number };
+type Save = { level: number; bestScore: number; stars: number; completed: number; coins: number };
+type Snapshot = { tiles: Tile[]; selected: number | null; score: number; moves: number; won: boolean; message: string; save: Save };
 
 const discoveries = [
   { title: 'The Baobab', place: 'Across Africa', icon: '🌳', text: 'Baobab trees can store water in their massive trunks and are important to many communities.' },
@@ -40,31 +41,35 @@ export default function App() {
   const [sound,setSound] = useState(false);
   const [showDiscovery,setShowDiscovery] = useState(false);
   const [discovery,setDiscovery] = useState(0);
-  const [won,setWon] = useState(false);
+  const [won,setWon] = useState(false);\n  const [history,setHistory] = useState<Snapshot[]>([]);\n  const remember = () => setHistory(h => [...h, { tiles: tiles.map(t=>({...t})), selected, score, moves, won, message, save: {...save} }].slice(-50));
   const remaining = tiles.filter(t=>!t.removed);
   const pairs = remaining.length/2;
   const progress = Math.round(((32-remaining.length)/32)*100);
   const freeTiles = useMemo(()=>remaining, [tiles]);
 
-  useEffect(()=>{ localStorage.setItem('afr imahjong-save',JSON.stringify(save)); },[save]);
+  useEffect(()=>{ localStorage.setItem('afrimahjong-save',JSON.stringify(save)); },[save]);
   const restart = (newLevel=false) => {
     setTiles(makeTiles()); setSelected(null); setHints(null); setMoves(0); setWon(false);
     setScore(0); setMessage(newLevel ? 'New journey unlocked. Good luck!' : 'Fresh board! Match the identical symbols.');
   };
   const choose = (tile:Tile) => {
     if(tile.removed || won) return;
-    setHints(null);
-    if(selected===tile.id) { setSelected(null); return; }
-    if(selected===null) { setSelected(tile.id); return; }
+    if(selected===tile.id) { remember(); setSelected(null); setHints(null); return; }
+    if(selected===null) { remember(); setSelected(tile.id); setHints(null); return; }
     const first=tiles.find(t=>t.id===selected);
-    if(first && first.icon===tile.icon) {
+    if(!first || first.removed) { remember(); setSelected(tile.id); setHints(null); return; }
+    remember();
+    setHints(null);
+    if(first.icon===tile.icon) {
       const next=tiles.map(t=>t.id===first.id||t.id===tile.id?{...t,removed:true}:t);
-      setTiles(next); setSelected(null); setMoves(m=>m+1); setScore(s=>s+100);
-      setMessage('Great match! +100 points ✨');
+      const nextScore=score+100;
+      setTiles(next); setSelected(null); setMoves(m=>m+1); setScore(nextScore);
+      setMessage('Great match! +100 points and +5 coins ✨');
+      setSave(s=>({...s,coins:s.coins+5,bestScore:Math.max(s.bestScore,nextScore)}));
       if(next.every(t=>t.removed)) {
-        const earned= Math.max(1, Math.min(3, 3-Math.floor(moves/10)));
-        setWon(true); setMessage('Amazing! You cleared this board.');
-        setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,bestScore:Math.max(s.bestScore,score+100)}));
+        const earned=Math.max(1,Math.min(3,3-Math.floor((moves+1)/10)));
+        setWon(true); setMessage('Amazing! Board cleared — +25 bonus coins!');
+        setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,coins:s.coins+25,bestScore:Math.max(s.bestScore,nextScore)}));
       }
     } else {
       setSelected(tile.id); setMoves(m=>m+1); setMessage('Not a match yet — try another tile.');
@@ -85,7 +90,7 @@ export default function App() {
     setTiles(tiles.map(t=>t.removed?t:{...t,icon:icons[index++],label:'Discovery tile'}));
     setSelected(null); setHints(null); setMessage('Tiles shuffled. Find your next pair!');
   };
-  const undo = () => { setMessage('Undo is ready for the next move in the full game build.'); setSelected(null); };
+  const undo = () => {\n    const previous=history[history.length-1];\n    if(!previous) { setMessage('Nothing to undo yet. Make a move first.'); return; }\n    setTiles(previous.tiles); setSelected(previous.selected); setScore(previous.score); setMoves(previous.moves); setWon(previous.won); setMessage('Last move undone.'); setSave(previous.save); setHints(null); setHistory(h=>h.slice(0,-1));\n  };
   const startNext = () => { setSave(s=>({...s,level:s.level+1})); restart(true); };
   const openDiscovery = () => { setDiscovery((d)=> (d+1)%discoveries.length); setShowDiscovery(true); };
 
@@ -103,7 +108,7 @@ export default function App() {
     <section className="stats-row">
       <div className="stat-card"><span className="stat-icon green"><Compass size={18}/></span><div><small>JOURNEY LEVEL</small><strong>{save.level}</strong></div></div>
       <div className="stat-card"><span className="stat-icon gold"><Star size={18}/></span><div><small>TOTAL STARS</small><strong>{save.stars}</strong></div></div>
-      <div className="stat-card"><span className="stat-icon orange"><Flame size={18}/></span><div><small>BOARDS CLEARED</small><strong>{save.completed}</strong></div></div>
+      <div className="stat-card"><span className="stat-icon orange"><Flame size={18}/></span><div><small>BOARDS CLEARED</small><strong>{save.completed}</strong></div></div>\n      <div className="stat-card"><span className="stat-icon gold">🪙</span><div><small>COINS</small><strong>{save.coins}</strong></div></div>
     </section>
 
     <section className="game-layout">
