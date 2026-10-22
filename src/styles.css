@@ -23,3 +23,8 @@ button:focus-visible{outline:3px solid #d6a84f;outline-offset:3px}
 @keyframes trophy-bob{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 @media(max-width:600px){.app-shell{padding:0 12px}.topbar{height:68px}.brand{font-size:17px}.brand-mark{width:34px;height:34px}h1{font-size:36px}.welcome{min-height:175px}.welcome-art{right:-140px;opacity:.48;transform:scale(.7);transform-origin:bottom right}.stats-row{gap:8px;margin-bottom:15px}.stat-card{padding:11px 9px;gap:8px;border-radius:12px}.stat-icon{width:33px;height:33px;border-radius:9px}.stat-card small{font-size:8px;letter-spacing:.5px}.stat-card strong{font-size:18px}.game-panel{padding:13px;border-radius:14px}.panel-heading h2{font-size:19px}.game-meta{gap:14px;font-size:10px}.tile-board{gap:5px;padding:7px;grid-template-rows:repeat(4,minmax(54px,auto))}.tile{border-radius:6px}.tile-symbol{font-size:clamp(16px,5vw,24px)}.tile-label{font-size:7px}.tool-row{gap:6px}.tool-button{gap:5px;padding:9px 3px;font-size:10px}.tool-icon{width:27px;height:27px}footer{flex-wrap:wrap;padding:20px 0;font-size:8px}.side-column{gap:9px}.discovery-card{padding:15px}.discovery-card h3{font-size:19px}.quote-card{padding:14px}.quote-card p{font-size:13px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* V5.4 personal-best stat */
+.stats-row{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{min-width:0}.stat-card strong{font-size:17px}}
