@@ -28,3 +28,9 @@ button:focus-visible{outline:3px solid #d6a84f;outline-offset:3px}
 .stats-row{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media(max-width:900px){.stats-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card{min-width:0}.stat-card strong{font-size:17px}}
+
+
+/* V5.5: six compact progress cards, including the personal-best move challenge. */
+.stats-row{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:1100px){.stats-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.stats-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat-card{min-width:0;padding:11px 9px}.stat-card small{font-size:9px;letter-spacing:.04em}.stat-card strong{font-size:18px}}
