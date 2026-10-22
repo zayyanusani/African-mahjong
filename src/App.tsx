@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Compass, Lightbulb, RotateCcw, Shuffle, Trophy, Volume2, VolumeX, BookOpen, Flame, Star, Leaf } from 'lucide-react';
 
 type Tile = { id: number; icon: string; label: string; removed: boolean; row: number; col: number; layer: number };
-type Save = { level: number; bestScore: number; stars: number; completed: number; coins: number; dailyClaimDate?: string };
+type Save = { level: number; bestScore: number; bestTime?: number; stars: number; completed: number; coins: number; dailyClaimDate?: string };
 type Snapshot = { tiles: Tile[]; selected: number | null; score: number; moves: number; won: boolean; message: string; save: Save };
 
 const discoveries = [
@@ -37,9 +37,9 @@ const makeTiles = (): Tile[] => {
 const readSave = (): Save => {
   try {
     const value=localStorage.getItem('afrimahjong-save') || localStorage.getItem('afr imahjong-save');
-    if(value) return {...{level:1,bestScore:0,stars:0,completed:0,coins:0,dailyClaimDate:''},...JSON.parse(value)};
+    if(value) return {...{level:1,bestScore:0,bestTime:0,stars:0,completed:0,coins:0,dailyClaimDate:''},...JSON.parse(value)};
   } catch {}
-  return {level:1,bestScore:0,stars:0,completed:0,coins:0,dailyClaimDate:''};
+  return {level:1,bestScore:0,bestTime:0,stars:0,completed:0,coins:0,dailyClaimDate:''};
 };
 
 export default function App() {
@@ -117,7 +117,7 @@ export default function App() {
       if(next.every(t=>t.removed)) {
         const earned=Math.max(1,Math.min(3,3-Math.floor((moves+1)/10)));
         setWon(true); playTone(880, 0.24); setMessage(`Amazing! Board cleared in ${formatTime(seconds)} — +25 bonus coins!`);
-        setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,coins:s.coins+25,bestScore:Math.max(s.bestScore,nextScore)}));
+        setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,coins:s.coins+25,bestScore:Math.max(s.bestScore,nextScore),bestTime:!s.bestTime||seconds<s.bestTime?seconds:s.bestTime}));
       }
     } else {
       playTone(220, 0.16);
@@ -194,6 +194,7 @@ export default function App() {
       <div className="stat-card"><span className="stat-icon gold"><Star size={18}/></span><div><small>TOTAL STARS</small><strong>{save.stars}</strong></div></div>
       <div className="stat-card"><span className="stat-icon orange"><Flame size={18}/></span><div><small>BOARDS CLEARED</small><strong>{save.completed}</strong></div></div>
       <div className="stat-card"><span className="stat-icon gold">🪙</span><div><small>COINS</small><strong>{save.coins}</strong></div></div>
+      <div className="stat-card"><span className="stat-icon green">⏱️</span><div><small>BEST TIME</small><strong>{save.bestTime ? formatTime(save.bestTime) : '—'}</strong></div></div>
     </section>
 
     <section className="game-layout">
@@ -220,7 +221,7 @@ export default function App() {
         <div className="quote-card"><span>“</span><p>Wisdom is like a baobab tree; no one individual can embrace it.</p><small>— African proverb</small></div>
       </aside>
     </section>
-    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.3 · TIME CHALLENGE + PROGRESS</span></footer>
+    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.4 · PERSONAL BEST + TIME TRIAL</span></footer>
     {showDiscovery && <div className="modal-backdrop" onClick={()=>setShowDiscovery(false)}><section className="discovery-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowDiscovery(false)}>×</button><div className="modal-icon">{discoveries[discovery].icon}</div><span className="section-kicker">AFRICA DISCOVERY LIBRARY</span><h2>{discoveries[discovery].title}</h2><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><div className="modal-controls"><button className="secondary-button" onClick={()=>setDiscovery((discovery+discoveries.length-1)%discoveries.length)}>← Previous</button><button className="primary-button" onClick={()=>setDiscovery((discovery+1)%discoveries.length)}>Next story →</button></div></section></div>}
   </main>;
 }
