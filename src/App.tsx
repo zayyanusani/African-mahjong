@@ -48,6 +48,7 @@ export default function App() {
   const [selected,setSelected] = useState<number|null>(null);
   const [score,setScore] = useState(0);
   const [moves,setMoves] = useState(0);
+  const [seconds,setSeconds] = useState(0);
   const [hints,setHints] = useState<[number,number]|null>(null);
   const [message,setMessage] = useState('Match two identical free tiles to clear the board.');
   const [sound,setSound] = useState(false);
@@ -91,8 +92,10 @@ export default function App() {
   const freeTiles = useMemo(()=>tiles.filter(isFree), [tiles]);
 
   useEffect(()=>{ localStorage.setItem('afrimahjong-save',JSON.stringify(save)); },[save]);
+  useEffect(()=>{ if(won) return; const timer=window.setInterval(()=>setSeconds(s=>s+1),1000); return ()=>window.clearInterval(timer); },[won]);
+  const formatTime = (value:number) => `${Math.floor(value/60).toString().padStart(2,'0')}:${(value%60).toString().padStart(2,'0')}`;
   const restart = (newLevel=false) => {
-    setTiles(makeTiles()); setSelected(null); setHints(null); setMoves(0); setWon(false); setHistory([]);
+    setTiles(makeTiles()); setSelected(null); setHints(null); setMoves(0); setSeconds(0); setWon(false); setHistory([]);
     setScore(0); setMessage(newLevel ? 'New journey unlocked. Good luck!' : 'Fresh board! Match the identical symbols.');
   };
   const choose = (tile:Tile) => {
@@ -113,7 +116,7 @@ export default function App() {
       setSave(s=>({...s,coins:s.coins+5,bestScore:Math.max(s.bestScore,nextScore)}));
       if(next.every(t=>t.removed)) {
         const earned=Math.max(1,Math.min(3,3-Math.floor((moves+1)/10)));
-        setWon(true); playTone(880, 0.24); setMessage('Amazing! Board cleared — +25 bonus coins!');
+        setWon(true); playTone(880, 0.24); setMessage(`Amazing! Board cleared in ${formatTime(seconds)} — +25 bonus coins!`);
         setSave(s=>({...s,completed:s.completed+1,stars:s.stars+earned,coins:s.coins+25,bestScore:Math.max(s.bestScore,nextScore)}));
       }
     } else {
@@ -196,7 +199,7 @@ export default function App() {
     <section className="game-layout">
       <div className="game-panel">
         <div className="panel-heading"><div><span className="section-kicker">THE SAVANNA TRAIL</span><h2>Tile Match <span className="level-pill">LEVEL {save.level}</span></h2></div><button className="text-button" onClick={()=>restart()}><RotateCcw size={15}/> Restart</button></div>
-        <div className="game-meta"><span>Score <b>{score.toLocaleString()}</b></span><span>Moves <b>{moves}</b></span><span>Pairs left <b>{pairs}</b></span></div>
+        <div className="game-meta"><span>Score <b>{score.toLocaleString()}</b></span><span>Moves <b>{moves}</b></span><span>Pairs left <b>{pairs}</b></span><span>Time <b>{formatTime(seconds)}</b></span></div>
         <div className="progress-track"><span style={{width:progress+'%'}}/></div>
         <div className="tile-board" aria-label="Mahjong tile board">
           {tiles.map(tile=><button key={tile.id} style={{gridColumn:tile.col+1,gridRow:tile.row+1,zIndex:tile.layer+1,transform:tile.layer===2?'translate(7px,-7px)':tile.layer===1?'translate(3px,-3px)':undefined}} className={'tile layer-'+tile.layer+' '+(tile.removed?'tile-gone':'')+(!isFree(tile)?' tile-blocked':'')+(selected===tile.id?' selected':'')+(hints?.includes(tile.id)?' hint-tile':'')} onClick={()=>choose(tile)} disabled={tile.removed} aria-label={tile.label}>
@@ -217,7 +220,7 @@ export default function App() {
         <div className="quote-card"><span>“</span><p>Wisdom is like a baobab tree; no one individual can embrace it.</p><small>— African proverb</small></div>
       </aside>
     </section>
-    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.2 · AFRICA DISCOVERY + MOTION</span></footer>
+    <footer><span>✦ AFRIMAHJONG</span><span>Made for curious minds, inspired by Africa.</span><span>V5.3 · TIME CHALLENGE + PROGRESS</span></footer>
     {showDiscovery && <div className="modal-backdrop" onClick={()=>setShowDiscovery(false)}><section className="discovery-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setShowDiscovery(false)}>×</button><div className="modal-icon">{discoveries[discovery].icon}</div><span className="section-kicker">AFRICA DISCOVERY LIBRARY</span><h2>{discoveries[discovery].title}</h2><span className="place-tag">{discoveries[discovery].place}</span><p>{discoveries[discovery].text}</p><div className="modal-controls"><button className="secondary-button" onClick={()=>setDiscovery((discovery+discoveries.length-1)%discoveries.length)}>← Previous</button><button className="primary-button" onClick={()=>setDiscovery((discovery+1)%discoveries.length)}>Next story →</button></div></section></div>}
   </main>;
 }
