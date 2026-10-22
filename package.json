@@ -9,16 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
-    "react": "latest",
-    "react-dom": "latest",
+    "@vitejs/plugin-react": "4.4.1",
+    "vite": "6.3.5",
+    "typescript": "5.7.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "lucide-react": "^0.468.0",
-    "vite-plugin-pwa": "latest"
+    "vite-plugin-pwa": "0.21.1"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5"
   }
 }
